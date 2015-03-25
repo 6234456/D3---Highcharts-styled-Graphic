@@ -1,0 +1,120 @@
+
+<html>  
+  <head>  
+        <meta charset="utf-8">  
+        <title>Pie</title>  
+  </head> 
+ 
+<style>
+	.axis path,
+	.axis line{
+		fill: none;
+		stroke: black;
+		shape-rendering: crispEdges;
+		stroke-width: 2;
+	}
+
+	.axis text,
+	text{
+		font-family: 'Helvetica';
+		font-size: 14px;
+		text-anchor: middle;
+	}
+ 
+</style>
+    <body>  
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script>
+			(function(){
+				var margin = {top: 40, left: 40, right: 20, bottom: 40},
+				 height = 600 - margin.top - margin.bottom,
+				 width = 900 - margin.right - margin.left,
+				 innerRadius = height/5 | 0,
+				 outerRadius = height/2 | 0,
+				 
+				 svg = d3.select("body").append("svg").attr("height", (height + margin.top + margin.bottom) )
+						.attr("width", (width + margin.right + margin.left) ),
+				 p = svg.append("g").attr("transform","translate("+ margin.left+ " , "+  margin.top +")"),
+				obj = {Controlling:2,Buchhaltung:8,Verwaltung:5,Verkauf:10.5,Personal:3,Lager:6,Frühung: 4, Zentral: 6},
+				data = d3.entries(obj),//.sort(function(e,f){return e.value > f.value;}),
+				
+				
+				textCenter = svg.append("text")
+				.attr("transform","translate(" + (margin.left + outerRadius) +" , " + (margin.top + outerRadius) +")").style("font-size","40px"),
+				
+				textVal = textCenter.append("tspan").attr("x",0).style("font-size","30px"),
+				textData = textCenter.append("tspan").attr("dy","1.5em").attr("x", 0).style("text-anchor","middle").style("font-weight","bold").attr("fill","red"),
+				
+				//filter - shadow
+				filter = svg.append("defs").append("filter").attr("id","f1").attr("x",0).attr("y",0)
+					.attr("width","200%").attr("height","200%");
+					
+				filter.append("feOffset").attr("result","offOut").attr("in","SourceGraphic").attr("dx",1).attr("dy",1);
+				
+				filter.append("feBlend").attr("in2","offOut").attr("in","SourceGraphic").attr("mode","normal");
+				//filter end
+			
+				
+				var pie = d3.layout.pie().value(function(d){return d.value;});
+				var arc = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+				var hColor = d3.scale.category20();
+			
+			
+				
+				var g = p.selectAll("g").data(pie(data)).enter().append("g").attr("transform","translate("+ outerRadius + ","+ outerRadius+")");
+				
+				
+				
+				var path = g.append("path")
+			   .attr("fill",function(d,i){return hColor(i);})
+			   .attr("filter","url(#f1)")
+			   .attr("stroke","silver")
+			   .attr("stroke-width",1)
+			   .transition()
+				.ease("cubic-in-out")
+				.duration(500)
+			    .attrTween("d", tweenPie)				
+				;
+				
+			   
+			   setTimeout(function(){
+				   d3.selectAll("path").on("mouseover", function(d,i){
+						var oldColor = this.getAttribute("fill");
+						var newColor = d3.rgb(oldColor).brighter().toString();
+				   
+						d3.select(this)
+						.attr("fill","gold").style("cursor","pointer")
+						.transition().duration(800).attr("transform","translate(" + arc.centroid(d).map(function(e){return e*0.15;})+ ")").ease("elastic");
+						
+						textVal.text(function(){
+							return data[i].key;
+						});
+						textData.text(function(){
+							return data[i].value;
+						});
+				   })
+				   .on("mouseleave",function(d,i){
+						d3.select(this).transition().duration(800).attr("fill",function(){return hColor(i);}).style("cursor","pointer")
+						.attr("transform","translate(0,0)").ease("elastic");
+						
+						textVal.text("");
+						textData.text("")
+				   })
+				   .on("click", function(d,i){
+						
+				   });
+				   
+			   },500);
+			  
+				   function tweenPie(b) {
+					  var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
+					  return function(t) { return arc(i(t)); };
+					}
+
+			   
+			})()
+			
+        </script>  
+		
+    </body>  
+</html>
