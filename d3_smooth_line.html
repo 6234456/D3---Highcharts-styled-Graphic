@@ -1,0 +1,620 @@
+
+<html>  
+  <head>  
+        <meta charset="utf-8">  
+        <title>Umsatzverlauf</title>  
+		<link href='http://fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+  </head> 
+  
+ 
+<style>
+	.axis path,
+	.axis line{
+		fill: none;
+		stroke: black;
+		shape-rendering: crispEdges;
+		stroke-width: 1;
+		vector-effect: non-scaling-stroke;
+	}
+	.y.axis path {
+	  display: none;
+	}
+	
+	.y.axis line,
+	.x.axis line{
+	  stroke: #ddd;
+	}
+
+	.axis text,
+	text{
+		font-family: 'Lato', 'Helvetica';
+		font-size: 12px;
+		font-weight: 100;
+		text-anchor: end;
+	}
+	
+	.curves path{
+		fill: none;
+	}
+	
+	.tooltip {
+		min-width: 5px;
+		border: 1px solid gold;
+		background-color: rgba(255,255,255,0.8);
+		border-radius: 8px;
+		box-shadow: 3px 3px 3px #ccc;
+		position:absolute;
+		padding: 10px;
+		line-height: 0.5;
+		vertical-align: middle;
+		font-family: 'Lato', 'Helvetica';
+		font-size: 14px; 
+	}
+	
+	.area,
+	.curve,
+	.circle{
+	  clip-path: url(#clip);
+	}
+	
+	
+	.resize path {
+	  fill: #666;
+	  fill-opacity: .8;
+	  stroke: #000;
+	  stroke-width: 1.5px;
+	}
+	
+	
+	svg {
+		margin: 0;
+	}
+ 
+</style>
+    <body>  
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>  
+        <script>
+		
+			/*
+				implement with d3.js
+				http://www.amcharts.com/demos/smoothed-line-chart/#theme-none
+			
+			*/
+			
+			var locale_de = d3.locale({
+							  decimal: ",",
+							  thousands: ".",
+							  grouping: [3],
+							  currency: ["€ ", ""],
+							  dateTime: "%a %b %e %X %Y",
+							  date: "%d/%.m/%.Y",
+							  time: "%H:%M:%S",
+							  periods: ["a.m.", "p.m."],
+							  days: ["Sonntag", "Montag", "Dienstag", "Mittwoche", "Donnerstag", "Freitag", "Samstag"],
+							  shortDays: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+							  months: ["Januar", "Feburar", "März", "April", "Mai", "Juni", "Juli", "August", "Semptember", "Oktober", "November", "Dezember"],
+							  shortMonths: ["Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+							});
+			
+			var customTimeFormat = locale_de.timeFormat.multi([
+								  [".%L", function(d) { return d.getMilliseconds(); }],
+								  [":%S", function(d) { return d.getSeconds(); }],
+								  ["%I:%M", function(d) { return d.getMinutes(); }],
+								  ["%I %p", function(d) { return d.getHours(); }],
+								  ["%d %b", function(d) { return d.getDay() && d.getDate() != 1; }],
+								  ["%d %b", function(d) { return d.getDate() != 1; }],
+								  ["%b %y", function(d) { return d.getMonth(); }],
+								  ["%Y", function() { return true; }]
+								]);
+			
+			var divider = 0;
+			
+			var worseColor = "#1E90FF";
+			
+			var fillColor = "#B22222";
+			
+			var dividerColor = "black";
+			
+			var animDuration = 650;
+			
+			function customAxisY(g) {
+			  g.selectAll("text")
+				  .attr("x", -10)
+				  .attr("dy", 5)
+				  .style("text-anchor","end");
+			}
+			
+			function customAxisX(g) {
+			  
+			}
+			
+			
+			var data =  [{
+					"year": "1950",
+					"value": -0.307
+				}, {
+					"year": "1951",
+					"value": -0.168
+				}, {
+					"year": "1952",
+					"value": -0.073
+				}, {
+					"year": "1953",
+					"value": -0.027
+				}, {
+					"year": "1954",
+					"value": -0.251
+				}, {
+					"year": "1955",
+					"value": -0.281
+				}, {
+					"year": "1956",
+					"value": -0.348
+				}, {
+					"year": "1957",
+					"value": -0.074
+				}, {
+					"year": "1958",
+					"value": -0.011
+				}, {
+					"year": "1959",
+					"value": -0.074
+				}, {
+					"year": "1960",
+					"value": -0.124
+				}, {
+					"year": "1961",
+					"value": -0.024
+				}, {
+					"year": "1962",
+					"value": -0.022
+				}, {
+					"year": "1963",
+					"value": 0
+				}, {
+					"year": "1964",
+					"value": -0.296
+				}, {
+					"year": "1965",
+					"value": -0.217
+				}, {
+					"year": "1966",
+					"value": -0.147
+				}, {
+					"year": "1967",
+					"value": -0.15
+				}, {
+					"year": "1968",
+					"value": -0.16
+				}, {
+					"year": "1969",
+					"value": -0.011
+				}, {
+					"year": "1970",
+					"value": -0.068
+				}, {
+					"year": "1971",
+					"value": -0.19
+				}, {
+					"year": "1972",
+					"value": -0.056
+				}, {
+					"year": "1973",
+					"value": 0.077
+				}, {
+					"year": "1974",
+					"value": -0.213
+				}, {
+					"year": "1975",
+					"value": -0.17
+				}, {
+					"year": "1976",
+					"value": -0.254
+				}, {
+					"year": "1977",
+					"value": 0.019
+				}, {
+					"year": "1978",
+					"value": -0.063
+				}, {
+					"year": "1979",
+					"value": 0.05
+				}, {
+					"year": "1980",
+					"value": 0.077
+				}, {
+					"year": "1981",
+					"value": 0.12
+				}, {
+					"year": "1982",
+					"value": 0.011
+				}, {
+					"year": "1983",
+					"value": 0.177
+				}, {
+					"year": "1984",
+					"value": -0.021
+				}, {
+					"year": "1985",
+					"value": -0.037
+				}, {
+					"year": "1986",
+					"value": 0.03
+				}, {
+					"year": "1987",
+					"value": 0.179
+				}, {
+					"year": "1988",
+					"value": 0.18
+				}, {
+					"year": "1989",
+					"value": 0.104
+				}, {
+					"year": "1990",
+					"value": 0.255
+				}, {
+					"year": "1991",
+					"value": 0.21
+				}, {
+					"year": "1992",
+					"value": 0.065
+				}, {
+					"year": "1993",
+					"value": 0.11
+				}, {
+					"year": "1994",
+					"value": 0.172
+				}, {
+					"year": "1995",
+					"value": 0.269
+				}, {
+					"year": "1996",
+					"value": 0.141
+				}, {
+					"year": "1997",
+					"value": 0.353
+				}, {
+					"year": "1998",
+					"value": 0.548
+				}, {
+					"year": "1999",
+					"value": 0.298
+				}, {
+					"year": "2000",
+					"value": 0.267
+				}, {
+					"year": "2001",
+					"value": 0.411
+				}, {
+					"year": "2002",
+					"value": 0.462
+				}, {
+					"year": "2003",
+					"value": 0.47
+				}, {
+					"year": "2004",
+					"value": 0.445
+				}, {
+					"year": "2005",
+					"value": 0.47
+				}];
+							
+			
+			data.map(function(e,i){ e.date = new Date(e.year + "-01-01") })
+			
+			var dataNow = data;
+			
+			//tooltip
+			var tooltip = d3.select("body").append("div")
+						.attr("class", "tooltip")
+						.style("display","none")
+						;
+						
+			var margin = {top: 20, left: 40, right: 20, bottom: 120},
+					height = 600 - margin.top - margin.bottom,
+					width = 1200 - margin.right - margin.left,
+					svg = d3.select("body").append("svg").attr("height", (height + margin.top + margin.bottom))
+						.attr("width", (width + margin.right + margin.left) ),
+					p = svg.append("g").attr("transform","translate("+ margin.left+ " , "+  margin.top +")");
+					
+			p.append("defs").append("clipPath")
+				.attr("id", "clip")
+			  .append("rect")
+				.attr("width", width)
+				.attr("height", height);
+			
+			var yMax = d3.max(data,function(d){return d.value});
+			var yMin = d3.min(data,function(d){return d.value});
+			var yDelta = (yMax-yMin)*0.05;
+			
+			var categories = (function(){
+				var res = [];
+				
+				data.forEach(function(e){
+					res.push(e.date);
+				});
+				
+				return res;
+			});
+			
+			var x = d3.time.scale().domain(d3.extent(categories())).range([0,width]);
+			var y = d3.scale.linear().domain([yMin-yDelta, yMax+yDelta]).range([height,0]);
+		
+			
+			var drag = d3.behavior.drag()
+					.on("drag", function(){
+						
+					});
+					
+			var update = function(data_,extent){
+				dataNow = data_;
+				x.domain(extent);
+				yMax = d3.max(data_,function(d){return d.value});
+				yMin = d3.min(data_,function(d){return d.value});
+				yDelta = (yMax-yMin)*0.05;
+				y.domain([yMin-yDelta, yMax+yDelta]);
+				
+				d3.select("#gradient")
+				  .attr("y1", y(divider-0.5))
+				  .attr("y2", y(divider+0.5))
+				  ;
+				
+				d3.select("path.curve")
+				.attr("d",line(data_))
+				.style("stroke","url(#gradient)")
+				;
+				
+				d3.select(".divider").attr({
+					y1 : y(0),
+					y2 : y(0),
+				});
+				
+				if(arguments[2]){
+					d3.selectAll(".circle").remove();
+					curve.selectAll("circle").data(data_).enter().append("circle")	
+					.attr("r",2.5)	
+					.attr("class","circle")
+					;
+				}
+				else{
+					d3.selectAll(".circle").data(data_).exit().remove();
+				}
+				d3.selectAll(".circle")
+				.attr("cx",function(d){return x(d.date)})
+				.attr("cy",function(d){return y(d.value)})
+				.attr("fill",circleColor)
+				.attr("stroke",circleColor)
+				;
+				
+				d3.select(".x.axis")
+				.call(xAxis)
+				.call(customAxisX)
+				;
+
+				d3.select(".y.axis")
+				.call(yAxis)
+				.call(customAxisY)
+				;
+				
+				d3.select("rect.extent")
+				.style(
+					{
+						"fill-opacity": 0
+					}
+				);
+			
+			}
+			
+			var brush = d3.svg.brush()
+					.x(x)
+					.on("brushstart", function(){
+						d3.select("rect.extent").style(
+							{
+								"fill": "DodgerBlue",
+								stroke: "none",
+								"fill-opacity": 0.2
+							}
+						);
+					})
+					.on("brushend", function(){
+						var extent = brush.extent();
+						var data_ = data.filter(function(e){ return extent[0] <= e.date && extent[1] >= e.date });
+						
+						if(extent[1].getYear()-extent[0].getYear()>1)
+							update(data_,extent)
+						else{
+							d3.select("rect.extent")
+								.style(
+									{
+										"fill-opacity": 0
+									}
+								);
+						}
+						
+					})
+					;
+			
+			var xAxis = d3.svg.axis()
+							.scale(x)
+							.tickSize(height)
+							.outerTickSize(0)
+						//	.tickValues(tickVal())
+						//	.ticks(5)
+						//	.tickFormat(customTimeFormat)
+							.orient("bottom");
+		
+			var yAxis = d3.svg.axis()
+						.scale(y)
+						.tickSize(width)
+					//	.tickFormat(locale_de.numberFormat(""))
+						.orient("right");
+
+			var line = d3.svg.line()
+							.x(function(d){return x(d.date)})
+							.y(function(d){return y(d.value)})
+							.interpolate("cardinal");
+							
+			
+			var curve = p.append("g").attr("class","stage");
+			curve.append("path").style("stroke","url(#gradient)").attr("d",line(data)).attr("class","curve")
+			.style("fill","none").style("stroke-width","1.5px")
+			;
+			
+			
+			
+			p.append("line").attr({
+				x1 : 0,
+				y1 : y(0),
+				x2 : width,
+				y2 : y(0),
+				"class": "divider"
+			}).style({
+				fill: "none",
+				"stroke-width": "1.5px",
+				stroke : dividerColor
+			})
+			
+			
+			
+			var crosshairColor = "#B22222";
+		
+			
+			var crosshairY_width = 35;
+			var crosshairY_height = 20;
+			
+			var crosshairBlockY = svg.append("rect").attr({
+				x:0,
+				y: margin.top + height,
+				width: crosshairY_width,
+				height: crosshairY_height -1
+			})
+			.style("fill", crosshairColor)
+			.style("display","none")
+			;
+			
+			var crosshairBlockYText = svg.append("text").text(123)
+									.attr("transform","translate("+[ crosshairY_width/2 , margin.top + height + crosshairY_height/2]+")")
+									.style({
+										"stroke" : "#fff",
+										"text-anchor":"start",
+										"display":"none"
+									});
+		
+		
+			var circleColor = function(d){
+				return d.value >= divider? fillColor: worseColor;
+			}
+		
+			curve.selectAll("circle").data(data).enter().append("circle")
+			.attr("cx",function(d){return x(d.date)})
+			.attr("cy",function(d){return y(d.value)})
+			.attr("r",2.5)
+			.attr("fill",circleColor)
+			.attr("class","circle")
+			.attr("stroke",circleColor)
+			;
+			
+			
+			svg.append("linearGradient")
+			  .attr("id", "gradient")
+			  .attr("gradientUnits", "userSpaceOnUse")
+			  .attr("x1", 0).attr("y1", y(divider-0.5))
+			  .attr("x2", 0).attr("y2", y(divider+0.5))
+			.selectAll("stop")
+			   .data([
+				{offset: "0%", color: worseColor},
+				{offset: "50%", color: worseColor},
+				{offset: "50%", color: fillColor},
+				{offset: "100%", color: fillColor}
+			  ])   
+			.enter().append("stop")
+			  .attr("offset", function(d) { return d.offset; })
+			  .attr("stop-color", function(d) { return d.color; });
+
+			p.append("g")
+				.attr("class", "x axis")
+				.call(xAxis)
+				.call(customAxisX)
+				;
+			
+			p.select(".x.axis .domain").attr("transform","translate("+ [0, height] +")")
+
+			p.append("g")
+				.attr("class", "y axis")
+				.call(yAxis)
+				.call(customAxisY)
+				;
+			
+			p.call(brush);
+				
+			//the overlay as the actionlistener carrier should be always the last element
+			var overlay = p.append("rect")
+							.attr("class","overlay")
+							.attr("height",height)
+							.attr("fill-opacity",0)
+							.attr("width",width)
+							.attr("cursor","col-resize")
+							.style("pointer-events", "all")
+							.on("dblclick", function(){
+								update(data, d3.extent(categories()), true);
+							})
+							.on("mousemove",function(){
+								
+								var y_ = d3.mouse(this)[1];
+								var x_ = d3.mouse(this)[0];
+								var l_ = dataNow.length;
+							
+								
+								var targDate = dataNow[Math.floor(x_/width*l_)].date;
+								var targValue = dataNow[Math.floor(x_/width*l_)].value;
+								var targYear = dataNow[Math.floor(x_/width*l_)].year;
+								
+								p.selectAll(".circle").filter(function(d){ return d.date == targDate;}).attr("r","3").attr("stroke-width","3");
+								p.selectAll(".circle").filter(function(d){ return d.date != targDate;}).attr("r","2.5").attr("stroke-width",null);
+								
+								tooltip
+										.style("top", function(){
+											return Math.round(y(targValue) + margin.top + 8 ) + "px"; // svg margin 50
+										})	
+										.style("left", function(){
+											return Math.round(x(targDate) + margin.left + 8) + "px";
+										})
+										.style("border-color", function(){
+											return targValue >= divider? fillColor: worseColor;
+										})
+										.html("<span><b>" + targYear +" :</b> </br> </br>" +locale_de.numberFormat(".2")(targValue) + "</span>");
+										
+									crosshairBlockY
+											.attr("x", x_ - crosshairY_width/2 + margin.left );
+											
+									crosshairBlockYText
+											.text(targYear)
+											.attr("transform","translate("+[ x_ - crosshairY_width/2 + margin.left + 3 , margin.top + height + crosshairY_height/2 + 3]+")")		
+							
+							})
+							.on("mouseover",function(){
+								tooltip.style("display","block");
+				
+								crosshairBlockY.style("display",null);
+								crosshairBlockYText.style("display",null);
+							})
+							.on("mouseout",function(){
+
+								p.selectAll(".circle").attr("r","2.5").attr("stroke-width",null);
+								
+								tooltip.style("display","none");
+								
+								crosshairBlockY.style("display","none");
+								crosshairBlockYText.style("display","none");
+							})
+							;	
+							
+							d3.select("rect.extent").attr({
+								y : 0,
+								height: height
+							});
+			
+        </script>  
+		
+    </body>  
+</html>
