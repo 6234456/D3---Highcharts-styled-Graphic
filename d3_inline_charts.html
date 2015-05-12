@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script>
+		
+			// inspired by http://omnipotent.net/jquery.sparkline/#s-about
+			var stage = {};
+
+			stage.stage = function(ele, data){
+			var margin = {top: 0, left: 0, right: 0, bottom: 0},
+				height = 20 - margin.top - margin.bottom,
+				width = 20 - margin.right - margin.left,
+				svg = d3.select(ele).append("svg")
+					.attr("height", (height + margin.top + margin.bottom))
+					.attr("width", (width + margin.right + margin.left) )
+					,
+				p = svg.append("g").attr("transform","translate("+ margin.left+ " , "+  margin.top +")")
+				color = d3.scale.category10()
+				// tooltip = d3.select(ele).append("div").style({
+					// "opacity" : 0.6,
+					// "background" : "white",
+					// "border-radius" : "5px",
+					// "position": "relative",
+					// "display": "none",
+					// "min-width":"10px",
+					// "min-height":"10px",
+				// })
+				;
+				
+				var d = data?data:JSON.parse(ele.getAttribute('data-src'));
+				
+				
+				stage.margin = margin;
+				stage.height = height;
+				stage.width = width;
+				stage.svg = svg;
+				stage.d = d;
+				// stage.tooltip = tooltip;
+				stage.color = color;
+
+			return p;
+			};
+
+
+
+			stage.spline = function(ele, data){
+
+			var p = stage.stage(ele,data),
+				margin = stage.margin,
+				height = stage.height,
+				data = stage.d,
+				width = stage.width;
+				
+			var y = d3.scale.linear().domain(d3.extent(data)).range([height,0]),
+				x = d3.scale.ordinal().domain(d3.range(0,data.length)).rangeBands([0, width],0,0),
+				line = d3.svg.line().x(function(d,i){ return x(i)}).y(function(d){ return y(d) }).interpolate("linear");
+				
+			p.append("path").attr("d", line(data)).style("fill","none").style("stroke-width","1.5px").style("stroke","coral");
+
+			}
+
+			stage.column = function(ele,data){
+			var p = stage.stage(ele,data),
+				height = stage.height,
+				color = stage.color,
+				data = stage.d,
+				//tooltip = stage.tooltip,
+				width = stage.width;
+				
+			var y = d3.scale.linear().domain(d3.extent(data)).range([height*0.9,0]),
+				x = d3.scale.ordinal().domain(d3.range(0,data.length)).rangeBands([0, width], 0.2);
+				
+			p.selectAll("rect").data(data).enter().append("rect")
+				.attr("x", function(d,i){ return x(i)})
+				.attr("y", function(d){ return y(d)})
+				.attr("width",x.rangeBand())
+				.attr("height", function(d){
+					return height - y(d);
+				})
+				.attr("fill", function(d,i){
+					return color(i);
+				})
+				.on("mouseover", function(){
+					// console.log(d3.mouse(this));
+				})
+				;
+			}
+
+			stage.pie =  function(ele, data){
+			var p = stage.stage(ele, data),
+				height = stage.height,
+				color = stage.color,
+				width = stage.width,
+				data = stage.d,
+				innerRadius = 0,
+				outerRadius = Math.min(width/2,height/2)
+				;
+				
+
+			var pie = d3.layout.pie();
+			var arc = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+
+			var g = p.selectAll("g").data(pie(data)).enter().append("g").attr("transform","translate("+ outerRadius + ","+ outerRadius+")");
+						
+			g.append("path")
+			 .attr("fill",function(d,i){return color(i);})
+			 .attr("d",arc);
+			}
+
+
+
+		</script>
+	</head>
+	
+	<body>
+		<span id="stage1" data-src ="[23,45,12,67]">Demo1</span>
+		<span id="stage2" data-src ="[23,45,12,67]">Demo2</span>
+		<span id="stage3" data-src ="[23,45,12,67]">Demo3</span>
+		
+		<script>
+			stage.pie(document.getElementById("stage1"));
+			stage.column(document.getElementById("stage2"));
+			stage.spline(document.getElementById("stage3"));
+		</script>
+	</body>
+</html>
