@@ -392,7 +392,6 @@
 						.text(d3.format(",.2%")(e.pv));
 						
 					}else{
-					
 						d3.select("#p1_" + i)
 						.transition()
 						.duration(duration)
@@ -517,9 +516,6 @@
 						e.style["fill-opacity"] = 1;
 					};
 				})
-			})
-			.on("click", function(){
-				update([0.4,0.95]);
 			})
 			;
 			
