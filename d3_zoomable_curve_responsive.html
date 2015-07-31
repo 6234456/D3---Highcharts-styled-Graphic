@@ -1,0 +1,1093 @@
+
+<html>  
+  <head>  
+        <meta charset="utf-8">  
+        <title>Umsatzverlauf</title>  
+		<link href='http://fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+  </head> 
+  
+ 
+<style>
+	.axis path,
+	.axis line{
+		fill: none;
+		stroke: black;
+		shape-rendering: crispEdges;
+		stroke-width: 1;
+		vector-effect: non-scaling-stroke;
+	}
+	.y.axis path {
+	  display: none;
+	}
+	
+	.y.axis line,
+	.x.axis line{
+	  stroke: #ddd;
+	}
+
+	.axis text,
+	text{
+		font-family: 'Lato', 'Helvetica';
+		font-size: 12px;
+		font-weight: 100;
+		text-anchor: end;
+	}
+	
+	.curves path{
+		fill: none;
+	}
+	
+	
+	.area,
+	.curve,
+	.circle{
+	  clip-path: url(#clip);
+	}
+	
+	
+	.brush .extent {
+	  stroke: #fff;
+	  fill-opacity: .125;
+	  shape-rendering: crispEdges;
+	}
+	
+	
+	.resize path {
+	  fill: #666;
+	  fill-opacity: .8;
+	  stroke: #000;
+	  stroke-width: 1.5px;
+	}
+	
+	
+	svg {
+		margin: 0;
+	}
+	
+	.svg-container {
+		display: inline-block;
+		position: relative;
+		width: 100%;
+		padding-bottom: 100%; /* aspect ratio */
+		vertical-align: top;
+		overflow: hidden;
+	}
+	.svg-content-responsive {
+		display: inline-block;
+		position: absolute;
+		top: 10px;
+		left: 0;
+	}
+ 
+</style>
+    <body>  
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>  
+        <script>
+		
+			/*
+				implement with d3.js
+				http://www.amcharts.com/demos/date-based-data/#theme-none
+			
+			  based on
+			  http://stackoverflow.com/questions/16265123/resize-svg-when-window-is-resized-in-d3-js
+			*/
+			
+			var locale_de = d3.locale({
+							  decimal: ",",
+							  thousands: ".",
+							  grouping: [3],
+							  currency: ["€ ", ""],
+							  dateTime: "%a %b %e %X %Y",
+							  date: "%d/%.m/%.Y",
+							  time: "%H:%M:%S",
+							  periods: ["a.m.", "p.m."],
+							  days: ["Sonntag", "Montag", "Dienstag", "Mittwoche", "Donnerstag", "Freitag", "Samstag"],
+							  shortDays: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+							  months: ["Januar", "Feburar", "März", "April", "Mai", "Juni", "Juli", "August", "Semptember", "Oktober", "November", "Dezember"],
+							  shortMonths: ["Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+							});
+			
+			var customTimeFormat = locale_de.timeFormat.multi([
+								  [".%L", function(d) { return d.getMilliseconds(); }],
+								  [":%S", function(d) { return d.getSeconds(); }],
+								  ["%I:%M", function(d) { return d.getMinutes(); }],
+								  ["%I %p", function(d) { return d.getHours(); }],
+								  ["%d %b", function(d) { return d.getDay() && d.getDate() != 1; }],
+								  ["%d %b", function(d) { return d.getDate() != 1; }],
+								  ["%b %y", function(d) { return d.getMonth(); }],
+								  ["%Y", function() { return true; }]
+								]);
+			
+			var color = d3.scale.category10();
+			
+			var fillColor = "#00BFFF";
+			
+			var animDuration = 650;
+			
+			function customAxisY(g) {
+			  g.selectAll("text")
+				  .attr("x", -10)
+				  .attr("dy", 5)
+				  .style("text-anchor","end");
+			}
+			
+			function customAxisX(g) {
+			  g.selectAll("text")
+				.remove();
+			}
+			
+			function customAxisX1(g) {
+			  g.selectAll("line")
+				.style("stroke","#000");
+			  g.selectAll("text")
+				.style("text-anchor","start");
+			}
+			
+			var data = [{
+				"date": "2012-07-27",
+				"value": 13
+			}, {
+				"date": "2012-07-28",
+				"value": 11
+			}, {
+				"date": "2012-07-29",
+				"value": 15
+			}, {
+				"date": "2012-07-30",
+				"value": 16
+			}, {
+				"date": "2012-07-31",
+				"value": 18
+			}, {
+				"date": "2012-08-01",
+				"value": 13
+			}, {
+				"date": "2012-08-02",
+				"value": 22
+			}, {
+				"date": "2012-08-03",
+				"value": 23
+			}, {
+				"date": "2012-08-04",
+				"value": 20
+			}, {
+				"date": "2012-08-05",
+				"value": 17
+			}, {
+				"date": "2012-08-06",
+				"value": 16
+			}, {
+				"date": "2012-08-07",
+				"value": 18
+			}, {
+				"date": "2012-08-08",
+				"value": 21
+			}, {
+				"date": "2012-08-09",
+				"value": 26
+			}, {
+				"date": "2012-08-10",
+				"value": 24
+			}, {
+				"date": "2012-08-11",
+				"value": 29
+			}, {
+				"date": "2012-08-12",
+				"value": 32
+			}, {
+				"date": "2012-08-13",
+				"value": 18
+			}, {
+				"date": "2012-08-14",
+				"value": 24
+			}, {
+				"date": "2012-08-15",
+				"value": 22
+			}, {
+				"date": "2012-08-16",
+				"value": 18
+			}, {
+				"date": "2012-08-17",
+				"value": 19
+			}, {
+				"date": "2012-08-18",
+				"value": 14
+			}, {
+				"date": "2012-08-19",
+				"value": 15
+			}, {
+				"date": "2012-08-20",
+				"value": 12
+			}, {
+				"date": "2012-08-21",
+				"value": 8
+			}, {
+				"date": "2012-08-22",
+				"value": 9
+			}, {
+				"date": "2012-08-23",
+				"value": 8
+			}, {
+				"date": "2012-08-24",
+				"value": 7
+			}, {
+				"date": "2012-08-25",
+				"value": 5
+			}, {
+				"date": "2012-08-26",
+				"value": 11
+			}, {
+				"date": "2012-08-27",
+				"value": 13
+			}, {
+				"date": "2012-08-28",
+				"value": 18
+			}, {
+				"date": "2012-08-29",
+				"value": 20
+			}, {
+				"date": "2012-08-30",
+				"value": 29
+			}, {
+				"date": "2012-08-31",
+				"value": 33
+			}, {
+				"date": "2012-09-01",
+				"value": 42
+			}, {
+				"date": "2012-09-02",
+				"value": 35
+			}, {
+				"date": "2012-09-03",
+				"value": 31
+			}, {
+				"date": "2012-09-04",
+				"value": 47
+			}, {
+				"date": "2012-09-05",
+				"value": 52
+			}, {
+				"date": "2012-09-06",
+				"value": 46
+			}, {
+				"date": "2012-09-07",
+				"value": 41
+			}, {
+				"date": "2012-09-08",
+				"value": 43
+			}, {
+				"date": "2012-09-09",
+				"value": 40
+			}, {
+				"date": "2012-09-10",
+				"value": 39
+			}, {
+				"date": "2012-09-11",
+				"value": 34
+			}, {
+				"date": "2012-09-12",
+				"value": 29
+			}, {
+				"date": "2012-09-13",
+				"value": 34
+			}, {
+				"date": "2012-09-14",
+				"value": 37
+			}, {
+				"date": "2012-09-15",
+				"value": 42
+			}, {
+				"date": "2012-09-16",
+				"value": 49
+			}, {
+				"date": "2012-09-17",
+				"value": 46
+			}, {
+				"date": "2012-09-18",
+				"value": 47
+			}, {
+				"date": "2012-09-19",
+				"value": 55
+			}, {
+				"date": "2012-09-20",
+				"value": 59
+			}, {
+				"date": "2012-09-21",
+				"value": 58
+			}, {
+				"date": "2012-09-22",
+				"value": 57
+			}, {
+				"date": "2012-09-23",
+				"value": 61
+			}, {
+				"date": "2012-09-24",
+				"value": 59
+			}, {
+				"date": "2012-09-25",
+				"value": 67
+			}, {
+				"date": "2012-09-26",
+				"value": 65
+			}, {
+				"date": "2012-09-27",
+				"value": 61
+			}, {
+				"date": "2012-09-28",
+				"value": 66
+			}, {
+				"date": "2012-09-29",
+				"value": 69
+			}, {
+				"date": "2012-09-30",
+				"value": 71
+			}, {
+				"date": "2012-10-01",
+				"value": 67
+			}, {
+				"date": "2012-10-02",
+				"value": 63
+			}, {
+				"date": "2012-10-03",
+				"value": 46
+			}, {
+				"date": "2012-10-04",
+				"value": 32
+			}, {
+				"date": "2012-10-05",
+				"value": 21
+			}, {
+				"date": "2012-10-06",
+				"value": 18
+			}, {
+				"date": "2012-10-07",
+				"value": 21
+			}, {
+				"date": "2012-10-08",
+				"value": 28
+			}, {
+				"date": "2012-10-09",
+				"value": 27
+			}, {
+				"date": "2012-10-10",
+				"value": 36
+			}, {
+				"date": "2012-10-11",
+				"value": 33
+			}, {
+				"date": "2012-10-12",
+				"value": 31
+			}, {
+				"date": "2012-10-13",
+				"value": 30
+			}, {
+				"date": "2012-10-14",
+				"value": 34
+			}, {
+				"date": "2012-10-15",
+				"value": 38
+			}, {
+				"date": "2012-10-16",
+				"value": 37
+			}, {
+				"date": "2012-10-17",
+				"value": 44
+			}, {
+				"date": "2012-10-18",
+				"value": 49
+			}, {
+				"date": "2012-10-19",
+				"value": 53
+			}, {
+				"date": "2012-10-20",
+				"value": 57
+			}, {
+				"date": "2012-10-21",
+				"value": 60
+			}, {
+				"date": "2012-10-22",
+				"value": 61
+			}, {
+				"date": "2012-10-23",
+				"value": 69
+			}, {
+				"date": "2012-10-24",
+				"value": 67
+			}, {
+				"date": "2012-10-25",
+				"value": 72
+			}, {
+				"date": "2012-10-26",
+				"value": 77
+			}, {
+				"date": "2012-10-27",
+				"value": 75
+			}, {
+				"date": "2012-10-28",
+				"value": 70
+			}, {
+				"date": "2012-10-29",
+				"value": 72
+			}, {
+				"date": "2012-10-30",
+				"value": 70
+			}, {
+				"date": "2012-10-31",
+				"value": 72
+			}, {
+				"date": "2012-11-01",
+				"value": 73
+			}, {
+				"date": "2012-11-02",
+				"value": 67
+			}, {
+				"date": "2012-11-03",
+				"value": 68
+			}, {
+				"date": "2012-11-04",
+				"value": 65
+			}, {
+				"date": "2012-11-05",
+				"value": 71
+			}, {
+				"date": "2012-11-06",
+				"value": 75
+			}, {
+				"date": "2012-11-07",
+				"value": 74
+			}, {
+				"date": "2012-11-08",
+				"value": 71
+			}, {
+				"date": "2012-11-09",
+				"value": 76
+			}, {
+				"date": "2012-11-10",
+				"value": 77
+			}, {
+				"date": "2012-11-11",
+				"value": 81
+			}, {
+				"date": "2012-11-12",
+				"value": 83
+			}, {
+				"date": "2012-11-13",
+				"value": 80
+			}, {
+				"date": "2012-11-14",
+				"value": 81
+			}, {
+				"date": "2012-11-15",
+				"value": 87
+			}, {
+				"date": "2012-11-16",
+				"value": 82
+			}, {
+				"date": "2012-11-17",
+				"value": 86
+			}, {
+				"date": "2012-11-18",
+				"value": 80
+			}, {
+				"date": "2012-11-19",
+				"value": 87
+			}, {
+				"date": "2012-11-20",
+				"value": 83
+			}, {
+				"date": "2012-11-21",
+				"value": 85
+			}, {
+				"date": "2012-11-22",
+				"value": 84
+			}, {
+				"date": "2012-11-23",
+				"value": 82
+			}, {
+				"date": "2012-11-24",
+				"value": 73
+			}, {
+				"date": "2012-11-25",
+				"value": 71
+			}, {
+				"date": "2012-11-26",
+				"value": 75
+			}, {
+				"date": "2012-11-27",
+				"value": 79
+			}, {
+				"date": "2012-11-28",
+				"value": 70
+			}, {
+				"date": "2012-11-29",
+				"value": 73
+			}, {
+				"date": "2012-11-30",
+				"value": 61
+			}, {
+				"date": "2012-12-01",
+				"value": 62
+			}, {
+				"date": "2012-12-02",
+				"value": 66
+			}, {
+				"date": "2012-12-03",
+				"value": 65
+			}, {
+				"date": "2012-12-04",
+				"value": 73
+			}, {
+				"date": "2012-12-05",
+				"value": 79
+			}, {
+				"date": "2012-12-06",
+				"value": 78
+			}, {
+				"date": "2012-12-07",
+				"value": 78
+			}, {
+				"date": "2012-12-08",
+				"value": 78
+			}, {
+				"date": "2012-12-09",
+				"value": 74
+			}, {
+				"date": "2012-12-10",
+				"value": 73
+			}, {
+				"date": "2012-12-11",
+				"value": 75
+			}, {
+				"date": "2012-12-12",
+				"value": 70
+			}, {
+				"date": "2012-12-13",
+				"value": 77
+			}, {
+				"date": "2012-12-14",
+				"value": 67
+			}, {
+				"date": "2012-12-15",
+				"value": 62
+			}, {
+				"date": "2012-12-16",
+				"value": 64
+			}, {
+				"date": "2012-12-17",
+				"value": 61
+			}, {
+				"date": "2012-12-18",
+				"value": 59
+			}, {
+				"date": "2012-12-19",
+				"value": 53
+			}, {
+				"date": "2012-12-20",
+				"value": 54
+			}, {
+				"date": "2012-12-21",
+				"value": 56
+			}, {
+				"date": "2012-12-22",
+				"value": 59
+			}, {
+				"date": "2012-12-23",
+				"value": 58
+			}, {
+				"date": "2012-12-24",
+				"value": 55
+			}, {
+				"date": "2012-12-25",
+				"value": 52
+			}, {
+				"date": "2012-12-26",
+				"value": 54
+			}, {
+				"date": "2012-12-27",
+				"value": 50
+			}, {
+				"date": "2012-12-28",
+				"value": 50
+			}, {
+				"date": "2012-12-29",
+				"value": 51
+			}, {
+				"date": "2012-12-30",
+				"value": 52
+			}, {
+				"date": "2012-12-31",
+				"value": 58
+			}, {
+				"date": "2013-01-01",
+				"value": 60
+			}, {
+				"date": "2013-01-02",
+				"value": 67
+			}, {
+				"date": "2013-01-03",
+				"value": 64
+			}, {
+				"date": "2013-01-04",
+				"value": 66
+			}, {
+				"date": "2013-01-05",
+				"value": 60
+			}, {
+				"date": "2013-01-06",
+				"value": 63
+			}, {
+				"date": "2013-01-07",
+				"value": 61
+			}, {
+				"date": "2013-01-08",
+				"value": 60
+			}, {
+				"date": "2013-01-09",
+				"value": 65
+			}, {
+				"date": "2013-01-10",
+				"value": 75
+			}, {
+				"date": "2013-01-11",
+				"value": 77
+			}, {
+				"date": "2013-01-12",
+				"value": 78
+			}, {
+				"date": "2013-01-13",
+				"value": 70
+			}, {
+				"date": "2013-01-14",
+				"value": 70
+			}, {
+				"date": "2013-01-15",
+				"value": 73
+			}, {
+				"date": "2013-01-16",
+				"value": 71
+			}, {
+				"date": "2013-01-17",
+				"value": 74
+			}, {
+				"date": "2013-01-18",
+				"value": 78
+			}, {
+				"date": "2013-01-19",
+				"value": 85
+			}, {
+				"date": "2013-01-20",
+				"value": 82
+			}, {
+				"date": "2013-01-21",
+				"value": 83
+			}, {
+				"date": "2013-01-22",
+				"value": 88
+			}, {
+				"date": "2013-01-23",
+				"value": 85
+			}, {
+				"date": "2013-01-24",
+				"value": 85
+			}, {
+				"date": "2013-01-25",
+				"value": 80
+			}, {
+				"date": "2013-01-26",
+				"value": 87
+			}, {
+				"date": "2013-01-27",
+				"value": 84
+			}, {
+				"date": "2013-01-28",
+				"value": 83
+			}, {
+				"date": "2013-01-29",
+				"value": 84
+			}, {
+				"date": "2013-01-30",
+				"value": 81
+			}];
+				
+
+			
+			var margin = {top: 20, left: 30, right: 20, bottom: 120},
+					height = 600 - margin.top - margin.bottom,
+					width = 1200 - margin.right - margin.left,
+					svg = d3.select("body")
+						.append("div")
+						.classed("svg-container", true)
+						.append("svg")
+						.attr("preserveAspectRatio", "xMinYMin meet")
+						.attr("viewBox", "0 0 "+ (width + margin.right + margin.left) +" "+ (height + margin.top + margin.bottom))
+					//	.attr("height", (height + margin.top + margin.bottom))
+					//	.attr("width", (width + margin.right + margin.left) )
+						.classed("svg-content-responsive", true),
+					p = svg.append("g").attr("transform","translate("+ margin.left+ " , "+  margin.top +")");
+					
+		
+			
+					
+			p.append("defs").append("clipPath")
+				.attr("id", "clip")
+			  .append("rect")
+				.attr("width", width)
+				.attr("height", height);
+			
+			var brushMargin = {top: 480, left: 30, right: 20, bottom: 80};
+			var brushHeight = 600 - brushMargin.top - brushMargin.bottom;
+			
+			var yMax = d3.max(data,function(d){return d.value});
+			var yMin = d3.min(data,function(d){return d.value});
+			var yDelta = (yMax-yMin)*0.05;
+			
+			var xMax = new Date(data[data.length-1].date)
+			var xMin = new Date(data[0].date)
+			
+			var x = d3.time.scale().domain([xMin, xMax]).rangeRound([0,width]);
+			var xArea = d3.time.scale().domain([xMin, xMax]).rangeRound([0,width]);
+			var yArea = d3.scale.linear().domain([yMin, yMax]).range([brushHeight, 0]);
+			
+		
+			
+			var drag = d3.behavior.drag()
+			//		.origin(function(d) { return d; })
+					.on("drag", function(){
+						d3.event.sourceEvent.stopPropagation();
+						
+						var f = brush.extent();
+						f.map(function(e){e.setDate(e.getDate() + Math.floor(d3.event.dx/4))});
+						
+						if(xArea(f[0])>= xArea.range()[0] && xArea(f[1]) <= xArea.range()[1]){
+							
+							var w = Math.max(xArea(f[0]), xArea.range()[0]);
+							var h = Math.min(xArea(f[1]), xArea.range()[1]);
+							
+						
+								d3.select("rect.extent").attr({
+									x :w,
+									width: h - w
+								});
+								
+								d3.select(".resize.e").attr("transform","translate("+ [h,0] +")");
+								d3.select(".resize.w").attr("transform","translate("+ [w,0] +")");
+								
+								brush.extent([xArea.invert(w),xArea.invert(h)]);
+								
+							//	setTimeout(brushed(),10);
+								brushed();
+						}
+					});
+			
+			var brush = d3.svg.brush()
+					.x(xArea)
+					.extent([new Date("2012-10-31"), new Date("2013-01-11")])
+					.on("brush", brushed);
+
+			var y = d3.scale.linear().domain([yMin-yDelta, yMax+yDelta]).range([height,0]);
+			
+			var xAxis = d3.svg.axis()
+							.scale(x)
+							.tickSize(height)
+							.outerTickSize(0)
+							.orient("bottom");
+							
+			var xAxis1 = d3.svg.axis()
+							.scale(x)
+							.outerTickSize(0)
+							.tickFormat(customTimeFormat)
+							.orient("top");
+							
+			var yAxis = d3.svg.axis()
+						.scale(y)
+						.tickSize(width)
+						.tickFormat(d3.format("s"))
+						.orient("right");
+						
+			var brushArea = d3.svg.area()
+					.interpolate("monotone")
+					.x(function(d) { return xArea(new Date(d.date)); })
+					.y0(brushHeight)
+					.y1(function(d) { return yArea(d.value); });
+					
+			var context = p.append("g")
+				.attr("class", "context")
+				.attr("transform", "translate(" + 0 + "," + brushMargin.top + ")");
+		
+			
+			var line = d3.svg.line()
+							.x(function(d){return x(new Date(d.date))})
+							.y(function(d){return y(d.value)||0})
+							.interpolate("linear");
+							
+			
+			var curve = p.append("g").attr("class","stage");
+			curve.append("path").attr("stroke",fillColor).attr("d",line(data)).attr("class","curve")
+			.attr("fill","none").attr("stroke-width","2")
+			;
+		
+
+			
+			var crosshairColor = "#B22222";
+			
+			var crosshairHorizontal = p.append("line").attr({
+						x1:0,
+						y1:height/2,
+						x2:width,
+						y2:height/2,
+						"class":"crosshair horizontal",
+					}).style("stroke", crosshairColor)
+					.style("display","none")
+					.style("stroke-width", "1px")
+					;
+			
+			var crosshairVertical = p.append("line").attr({
+						x1:width/2,
+						y1:0,
+						x2:width/2,
+						y2:height,
+						"class":"crosshair vertical",
+					}).style("stroke", crosshairColor)
+					.style("display","none")
+					.style("stroke-width", "1px")
+					;
+			
+			var crosshairY_width = 70;
+			var crosshairY_height = 20;
+			var crosshairX_width = 30;
+			var crosshairX_height = 20;
+			
+			var crosshairBlockY = svg.append("rect").attr({
+				x:0,
+				y: margin.top - crosshairY_height,
+				width: crosshairY_width,
+				height: crosshairY_height -1
+			})
+			.style("fill", crosshairColor)
+			.style("display","none")
+			;
+			
+			var crosshairBlockYText = svg.append("text").text(123)
+									.attr("transform","translate("+[ crosshairY_width/2 , margin.top - crosshairY_height/2]+")")
+									.style({
+										"stroke" : "#fff",
+										"text-anchor":"start",
+										"display":"none"
+									});
+		
+			var crosshairBlockX = svg.append("rect").attr({
+				x: margin.left - crosshairX_width,
+				y: 0,
+				width: crosshairX_width,
+				height: crosshairX_height
+			})
+			.style("fill", crosshairColor)
+			.style("display","none")
+			;
+			
+			var crosshairBlockXText = svg.append("text").text(123)
+									.attr("transform","translate("+[ margin.left - crosshairX_width , crosshairX_height/2]+")")
+									.style({
+										"stroke" : "#fff",
+										"text-anchor":"start",
+										"display":"none"
+									});
+			
+			curve.selectAll("circle").data(data).enter().append("circle")
+			.attr("cx",function(d){return x(new Date(d.date))})
+			.attr("cy",function(d){return y(d.value)})
+			.attr("r",2.5)
+			.attr("fill","#fff")
+			.attr("class","circle")
+			.attr("stroke",fillColor)
+			;
+			
+			context.append("path")
+			  .datum(data)
+			  .attr("class", "area")
+			  .attr("d", brushArea)
+			  .style("fill",fillColor)
+			  .style("fill-opacity", "0.8")
+			  ;
+		
+			var arc = d3.svg.arc()
+				.outerRadius(brushHeight / 2)
+				.startAngle(0)
+				.endAngle(function(d, i) { return i ? -Math.PI : Math.PI; });
+			
+			context.append("g")
+			  .attr("class", "x brush")
+			  .call(brush)
+			.selectAll(".resize")
+			 .append("path")
+			.attr("transform", "translate(0," +  brushHeight / 2 + ")")
+			.attr("d", arc);
+			
+			context.selectAll("rect")
+			  .attr("y", -1)
+			  .attr("height", brushHeight);
+
+			p.append("g")
+			.attr("class", "x axis")
+			.attr("id","x")
+			.attr("transform", "translate(0," + (-0.5) + ")")
+			.call(xAxis1)
+			.call(customAxisX1);
+			
+			p.append("g")
+				.attr("class", "x axis")
+				.attr("id","x1")
+				.call(xAxis)
+				.call(customAxisX)
+				;
+
+			p.append("g")
+				.attr("class", "y axis")
+				.call(yAxis)
+				.call(customAxisY)
+				;
+				
+				//tooltip
+			var tooltip = p.append("rect")
+						.attr("class", "tooltip-svg")
+						.attr("width",35)
+						.attr("height",30)
+						.attr("rx",5)
+						.attr("ry",5)
+						.style("display","none")
+						.style("stroke", fillColor)
+						.style("fill","#fff")
+						.style("fill-opacity",0.6)
+						;
+
+			var tooltip_text = p.append("text")
+						.attr("class", "tooltiptext-svg")
+						.style("display","none")
+						.style("fill","#000")
+						.style("font-size", 15)
+						;
+		
+				
+			//the overlay as the actionlistener carrier should be always the last element
+			var overlay = p.append("rect")
+							.attr("class","overlay")
+							.attr("height",height)
+							.attr("fill-opacity",0)
+							.attr("width",width)
+							.attr("cursor","all-scroll")
+							.style("pointer-events", "all")
+							.call(drag)
+							;	
+			
+			brushed();
+			function brushed() {
+			  x.domain(brush.empty() ? xArea.domain() : brush.extent());
+			  
+			  var data_ = (function(){
+				var domain = x.domain();
+				return data.filter(function(e){
+					var date = new Date(e.date);
+					return date >= domain[0] && date <= domain[1];
+				});
+			  }());
+			  
+				var yMax = d3.max(data_,function(d){return d.value});
+				var yMin = d3.min(data_,function(d){return d.value});
+				var yDelta = (yMax-yMin)*0.05;
+				
+			  y.domain([yMin-yDelta, yMax+yDelta]);
+
+			  p.select(".curve").attr("d", line(data));
+			  p.selectAll(".circle").attr("cx",function(d){return x(new Date(d.date))}).attr("cy",function(d){return y(d.value)||0});
+			  p.select("#x").call(xAxis1).call(customAxisX1);
+			  p.select("#x1").call(xAxis).call(customAxisX);
+			  p.select(".y.axis").call(yAxis).call(customAxisY);
+			  
+			  
+			  
+			  //action listener
+			  	overlay.
+			on("mousemove",function(){
+				var y_ = d3.mouse(this)[1];
+				var x_ = d3.mouse(this)[0];
+				var l_ = data_.length;
+				
+				crosshairHorizontal.attr("y1", y_).attr("y2",y_);
+				crosshairVertical.attr("x1", x_).attr("x2",x_);
+				
+			//	console.log(d3.format(".2")(y.invert(y_)));
+				
+				var targDate = data_[Math.floor(x_/width*l_)].date;
+				var targValue = data_[Math.floor(x_/width*l_)].value;
+				p.selectAll(".circle").filter(function(d){ return d.date == targDate;}).attr("r","4").attr("stroke-width","3");
+				p.selectAll(".circle").filter(function(d){ return d.date != targDate;}).attr("r","2.5").attr("stroke-width",null);
+				
+				tooltip
+						.attr("y", function(){
+							return Math.round(y(targValue) + 5 ) ; // svg margin 50
+						})
+						.attr("x", function(){
+							return Math.round(x(new Date(targDate)) + 5) ;
+						})
+				//		.text(targValue)
+						;
+
+                tooltip_text
+                        .attr("y", function(){
+							return Math.round(y(targValue) + 25 ) ; // svg margin 50
+						})
+						.attr("x", function(){
+							return Math.round(x(new Date(targDate)) + 31) ;
+						})
+						.text(targValue)
+                        ;
+						
+				
+				crosshairBlockY
+						.attr("x", x_ - crosshairY_width/2 + margin.left );
+						
+				crosshairBlockYText
+						.text(targDate)
+						.attr("transform","translate("+[ x_ - crosshairY_width/2 + margin.left + 3 , margin.top - crosshairY_height/2 + 3]+")")		
+				
+				crosshairBlockX
+						.attr("y", y_ - crosshairX_height/2 + margin.top );
+						
+				crosshairBlockXText
+						.text(Math.round(y.invert(y_)))
+						.attr("transform","translate("+[ margin.left - crosshairX_width + 3, y_ - crosshairX_height/2 + margin.top + 15]+")");
+			})
+			.on("mouseout",function(){
+				crosshairHorizontal.style("display","none");
+				crosshairVertical.style("display","none");
+				p.selectAll(".circle").attr("r","2.5").attr("stroke-width",null);
+				
+				tooltip.style("display","none");
+				tooltip_text.style("display","none");
+				
+				crosshairBlockY.style("display","none");
+				crosshairBlockYText.style("display","none");
+				
+				crosshairBlockX.style("display","none");
+				crosshairBlockXText.style("display","none");
+			})
+			.on("mouseover",function(){
+				crosshairHorizontal.style("display",null);
+				crosshairVertical.style("display",null);
+				
+				tooltip.style("display",null);
+				tooltip_text.style("display",null);
+				
+				crosshairBlockY.style("display",null);
+				crosshairBlockYText.style("display",null);
+				
+				crosshairBlockX.style("display",null);
+				crosshairBlockXText.style("display",null);
+			})  
+			;
+			}
+		
+        </script>  
+		
+    </body>  
+</html>
