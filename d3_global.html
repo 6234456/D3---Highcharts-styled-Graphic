@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script charset="utf-8">
+
+var width = 480,
+    height = 500,
+    width_flat = width * 1.8,
+    height_flat = height
+    ;
+
+var projection = d3.geo.orthographic()
+    .scale(250)
+    .translate([width / 2, height / 2])
+    .clipAngle(90);
+
+var projection_flat = d3.geo.mercator()
+    .scale((width_flat + 1) / 2 / Math.PI)
+    .translate([width_flat / 2, height_flat / 2])
+;
+
+var path_flat = d3.geo.path()
+    .projection(projection_flat);
+
+var graticule = d3.geo.graticule();
+
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var x = d3.scale.linear()
+    .domain([0, width])
+    .range([-180, 180]);
+
+var y = d3.scale.linear()
+    .domain([0, height])
+    .range([90, -90]);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var flat = d3.select("body").append("svg").attr("class", "flat").attr({
+  "width" : width_flat,
+  "height" : height_flat
+});
+
+var flat_map = flat.append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("d", path_flat);
+
+var legend = d3.select("body").append("svg").attr("class", "legend").attr({
+  "width" : 150,
+  "height" : height
+});
+
+  var capitals = [
+                {CapitalName:"Beijing", CapitalLongitude:116.24, CapitalLatitude:39.54 },
+                {CapitalName:"Qianjiang", CapitalLongitude:112.51, CapitalLatitude:30.25 },
+                {CapitalName:"Bremen", CapitalLongitude:8.48, CapitalLatitude:53.5 },
+                {CapitalName:"Washington DC", CapitalLongitude:-77, CapitalLatitude:38.88 },
+                {CapitalName:"Santiago de Chile", CapitalLongitude:-70.4, CapitalLatitude:-33.27 },
+                {CapitalName:"Québec", CapitalLongitude:-71.13, CapitalLatitude:46.49 },
+            ];
+
+var legendGroup = legend.selectAll("g.legendgroup").data(capitals).enter().append("g")
+      .attr("class", "legendgroup");
+
+legendGroup.append("text")
+            .attr("x", 10)
+            .attr("y", function(d,i){
+              return 100 + i * 30;
+            })
+            .style("font-size", 12)
+            .style("cursor","pointer")
+            .text(function(d){
+              return d.CapitalName;
+            })
+            .on("click", function(d){
+              d3.transition()
+                .duration(3000)
+                .tween("rotate", function() {
+                  var p = [d.CapitalLatitude, d.CapitalLongitude],
+                      r = d3.interpolate(projection.rotate(), [-p[1], -p[0]]),
+                      c = d3.interpolate(projection_flat.center(), [p[1], p[0]]),
+                      s = d3.scale.pow(1).domain([0,0.3]).range([1000, 250]),
+                      s1 = d3.scale.pow(1).domain([0.3,1]).range([250, 1000]);
+
+
+                  return function(t){
+                    projection.rotate(r(t));
+                    projection_flat.center(c(t));
+                    t>0.3?projection_flat.scale(s1(t)):projection_flat.scale(s(t));
+                    svg.selectAll("path").attr("d", path);
+                    flat.selectAll("path").attr("d", path_flat);
+                    changeAllPoints();
+                  }
+                }).transition();
+            })
+            ;
+
+
+
+svg.on("mousemove", function() {
+  var p = d3.mouse(this);
+  projection.rotate([x(p[0]), y(p[1])]);
+  svg.selectAll("path").attr("d", path);
+  changeAllPoints();
+});
+
+var toggleFlat = false;
+
+  function changeFlat(d){
+    projection_flat.center(d);
+    flat.selectAll("path").attr("d", path_flat);
+  }
+
+	  
+	function changeAllPoints(){
+		svg.selectAll("g.gpoint").remove();
+		addAllPoints();
+	}
+
+	function addAllPoints() {
+            capitals.forEach(function(i){
+                addpoint(i.CapitalLongitude, i.CapitalLatitude, i.CapitalName );
+            });
+
+        };
+	
+    function fade_at_edge(d, text) {
+      var centerPos = projection.invert([width/2,height/2]),
+          arc = d3.geo.greatArc();
+     
+      var start_dist = 1.57 - arc.distance({source: d, target: centerPos});
+
+        
+      var fade = d3.scale.linear().domain([-.1,0]).range([0,.1]) ;
+
+      return fade(start_dist)
+  }
+
+
+	 function addpoint(lat,lon,text) {
+
+        var gpoint = svg.append("g").attr("class", "gpoint");
+        var x = projection([lat,lon])[0];
+        var y = projection([lat,lon])[1];
+
+
+        gpoint.append("svg:circle")
+            .attr("cx", x)
+            .attr("cy", y)
+            .attr("class","point")
+            .attr("r", 1);
+
+        gpoint.style("opacity", function(){
+                 return fade_at_edge([lat, lon], text);
+            });
+
+        //conditional in case a point has no associated text
+        if(text.length>0){
+
+            gpoint.append("text")
+                .attr("x", x+2)
+                .attr("y", y+2)
+                .attr("class","text")
+		            .style("font-size","5px")
+                .text(text);
+        }
+
+    }
+
+
+d3.json("http://bl.ocks.org/mbostock/raw/4090846/world-110m.json", function(error, world) {
+  if (error) throw error;
+
+  flat.insert("path", ".graticule")
+      .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "land")
+      .attr("d", path_flat)
+      .style("fill", "#ccc")
+      ;
+
+  flat.insert("path", ".graticule")
+      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
+      .attr("class", "boundary")
+      .attr("d", path_flat)
+      .style({
+        "fill" : "none",
+        "stroke" : "#fff",
+        "stroke-width": ".5px"
+      })
+      ;
+
+
+
+  svg.append("path")
+      .datum(topojson.feature(world, world.objects.land))
+      .attr("class", "land")
+      .attr("d", path)
+      .style("fill", "#ccc")
+    ;
+ 
+  svg.append("path")
+     .datum(topojson.mesh(world, world.objects.countries, function(a,b){
+		    return a !==b;
+	   }
+	))
+	.attr("class", "boundary")
+	.attr("d", path)
+  .style({
+        "fill" : "none",
+        "stroke" : "#fff",
+        "stroke-width": ".5px"
+    })
+	;
+	
+});
+
+</script>
