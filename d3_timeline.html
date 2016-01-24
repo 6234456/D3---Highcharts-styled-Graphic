@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+	<style>
+
+	body {
+	  font-family: 'Lucida Sans Unicode', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	  margin: auto;
+	  position: relative;
+	  width: 960px;
+	}
+
+	text {
+	  font-size: 16px;
+	  font-family: 'Lucida Sans Unicode', "Helvetica Neue", Helvetica, Arial, sans-serif;
+	}
+	
+	.title text {
+		font-size: 25px;
+	}
+	
+	.legend text {
+		font-size: 16px;
+		font-style: italic;
+	}
+
+	.axis path,
+	.axis line {
+	  fill: none;
+	  stroke: #000;
+	  shape-rendering: crispEdges;
+	}
+
+	</style>
+	
+	
+ 	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script> 
+	<script src="http://momentjs.com/downloads/moment-with-locales.js" charset="utf-8"></script> 
+</head>
+
+<body>
+
+	<script>
+			var margin = {
+					top: 50,
+					right: 50,
+					bottom: 100,
+					left: 50
+				},
+			width = 1200 - margin.left - margin.right,
+			height = 800 - margin.top - margin.bottom;
+			
+			var rectHeight = 15;
+			var rectMargin = 5;		
+			var rectStart = height - 10;
+			var color = d3.scale.category10();	
+
+			var xDomain = [new Date("2015-12-01"), new Date("2016-03-31")];
+			var tasks = [
+				{start:"2015-12-20", end:"2016-01-06", resp:"Qiou Yang", name:"TK offshore"},
+				{start:"2016-02-20", end:"2016-03-06", resp:"Saue", name:"TK offshore"},
+				{start:"2015-12-10", end:"2016-01-06", resp:"Qiou Yang", name:"TK offshore"},
+				{start:"2016-01-20", end:"2016-02-06", resp:"Saue", name:"TK offshore"}
+				];
+
+			tasks = tasks.sort(function(e, f){
+				if(e.start > f.start)
+					return 1;
+
+				if(e.start < f.start)
+					return -1;
+				
+				return 0;
+			});
+
+			var x = d3.time.scale()
+				.range([0, width])
+				.domain(xDomain);
+
+			var xAxis = d3.svg.axis()
+				.scale(x)
+				.ticks(10)
+				.orient("bottom");
+			
+			var format = d3.format(".2%");
+
+			var zoom = function(){
+				
+				timeline.remove();
+			
+				xAxis.ticks(10 * (1 + (d3.event.scale >> 0 )));
+				createTimeline();
+
+				taskRect.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+				//timeline.select("path.domain").attr("transform", "translate(" + d3.event.translate + ")scale(" + 1/d3.event.scale+ ")");
+				timeline.attr("transform", "translate(" + [d3.event.translate[0], height] + ")scale(" + [d3.event.scale,1]+ ")");
+				timeline.selectAll(".tick line").attr("transform","scale("+ [1/d3.event.scale, 1] +")");
+				timeline.selectAll(".axis text").attr("transform", "scale("+ [1/d3.event.scale, 1] +")rotate(-45)");
+			}
+
+			var svg = d3.select("body").append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+				.call(d3.behavior.zoom().scaleExtent([1,8]).on("zoom",zoom))	
+				.append("g")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			var taskRect = svg.append("g").attr("class", "rect");
+	
+
+			taskRect.selectAll("rect").data(tasks).enter().append("rect")
+				.attr("x", function(d){
+					return x(new Date(d.start));
+				})
+				.attr("y", function(d, i){
+					return rectStart - ((i + 1) * rectHeight + i * rectMargin);
+				})
+				.attr("height", rectHeight)
+				.attr("width", function(d){
+					return x(new Date(d.end)) - x(new Date(d.start));
+				})
+				.style("fill", function(d){
+					return color(d.resp);	
+				})
+			
+			var timeline;			
+	
+			var createTimeline = function(){	
+				timeline = svg.append("g").attr("class","x axis").attr("transform", "translate("+ [0, height] +")");
+				timeline.call(xAxis);
+
+				timeline.selectAll(".axis text").style("text-anchor", "end").attr("transform", "rotate(-45)");
+			}
+
+			
+			createTimeline();
+	</script>
+</body>
+</html>
